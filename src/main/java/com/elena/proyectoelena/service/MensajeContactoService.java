@@ -25,7 +25,12 @@ public class MensajeContactoService {
         MensajeContacto mensaje = new MensajeContacto(
                 request.nombre(),
                 request.email(),
+                request.telefono(),
                 request.asunto(),
+                request.nombrePaciente(),
+                request.edadPaciente(),
+                request.motivoConsulta(),
+                request.tratamientoPrevio(),
                 request.mensaje()
         );
         return mensajeContactoMapper.toResponse(mensajeContactoRepository.save(mensaje));

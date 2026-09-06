@@ -5,6 +5,7 @@ target/
 !**/src/test/**/target/
 logs/
 backend.log
+backend-run.log
 uploads/
 fotos-pendientes/
 

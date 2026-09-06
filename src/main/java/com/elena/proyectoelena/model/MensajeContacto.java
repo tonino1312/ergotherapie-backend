@@ -25,8 +25,22 @@ public class MensajeContacto {
     @Column(nullable = false)
     private String email;
 
+    private String telefono;
+
     @Column(nullable = false, length = 200)
     private String asunto;
+
+    @Column(name = "nombre_paciente", length = 150)
+    private String nombrePaciente;
+
+    @Column(name = "edad_paciente")
+    private Integer edadPaciente;
+
+    @Column(name = "motivo_consulta", columnDefinition = "TEXT")
+    private String motivoConsulta;
+
+    @Column(name = "tratamiento_previo", columnDefinition = "TEXT")
+    private String tratamientoPrevio;
 
     @Column(columnDefinition = "TEXT")
     private String mensaje;
@@ -41,10 +55,17 @@ public class MensajeContacto {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public MensajeContacto(String nombre, String email, String asunto, String mensaje) {
+    public MensajeContacto(String nombre, String email, String telefono, String asunto,
+                            String nombrePaciente, Integer edadPaciente, String motivoConsulta,
+                            String tratamientoPrevio, String mensaje) {
         this.nombre = nombre;
         this.email = email;
+        this.telefono = telefono;
         this.asunto = asunto;
+        this.nombrePaciente = nombrePaciente;
+        this.edadPaciente = edadPaciente;
+        this.motivoConsulta = motivoConsulta;
+        this.tratamientoPrevio = tratamientoPrevio;
         this.mensaje = mensaje;
         this.estado = EstadoMensajeContacto.NUEVO;
     }

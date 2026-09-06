@@ -1,6 +1,11 @@
 {
   "nombre": "Ana Perez",
   "email": "ana.perez@example.com",
+  "telefono": "+34 600 123 456",
   "asunto": "Consulta sobre horarios",
+  "nombrePaciente": "Marcos Perez",
+  "edadPaciente": 6,
+  "motivoConsulta": "Dificultades de coordinacion motora fina y sensibilidad a texturas",
+  "tratamientoPrevio": "Ha recibido logopedia durante 1 año",
   "mensaje": "Hola, querria saber si teneis hueco los martes por la tarde."
 }

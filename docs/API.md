@@ -331,13 +331,26 @@ Inspirado en el formulario de contacto de `ergotherapie-kids.de` (nombre, email,
 - **Para qué sirve**: el único endpoint público de este dominio — lo llamaría el formulario de la web pública. Crea un mensaje con `estado = NUEVO`.
 - **Acceso**: público, sin token.
 - **Base de datos**: `INSERT` en `mensajes_contacto`.
+- **Ampliado (V9)**: el formulario original (nombre/email/asunto/mensaje) se quedaba corto para un negocio clínico — el visitante necesita poder describir el caso concreto, no solo "quiero información". Se añadieron campos sobre el paciente y el motivo de consulta.
 - **Request** (`api-examples/20-contacto-create.json`):
 ```json
-{ "nombre": "Ana Perez", "email": "ana.perez@example.com", "asunto": "Consulta sobre horarios", "mensaje": "Hola, querria saber si teneis hueco los martes por la tarde." }
+{
+  "nombre": "Ana Perez",
+  "email": "ana.perez@example.com",
+  "telefono": "+34 600 123 456",
+  "asunto": "Consulta sobre horarios",
+  "nombrePaciente": "Marcos Perez",
+  "edadPaciente": 6,
+  "motivoConsulta": "Dificultades de coordinacion motora fina y sensibilidad a texturas",
+  "tratamientoPrevio": "Ha recibido logopedia durante 1 año",
+  "mensaje": "Hola, querria saber si teneis hueco los martes por la tarde."
+}
 ```
-  - `mensaje` es opcional (igual que en la web de referencia); `nombre`, `email` y `asunto` son obligatorios, con límites de longitud para evitar abuso (`nombre` ≤150, `asunto` ≤200, `mensaje` ≤5000 caracteres).
-- **Probado**: ✅ 201 con `estado: NUEVO`; `400` con email mal formado.
-- **Nota para producción**: al ser público y sin autenticación, en un despliegue real conviene añadir protección anti-spam (rate limiting por IP, reCAPTCHA, o un WAF delante) — no implementado en esta fase.
+  - Obligatorios: `nombre`, `email`, `asunto`, `nombrePaciente`, `edadPaciente` (0-120), `motivoConsulta`. Opcionales: `telefono`, `tratamientoPrevio`, `mensaje` (texto libre adicional). Límites de longitud para evitar abuso (`nombre`/`nombrePaciente` ≤150, `asunto` ≤200, `telefono` ≤30, `motivoConsulta`/`tratamientoPrevio` ≤3000, `mensaje` ≤5000 caracteres).
+  - Todas las columnas nuevas son `nullable` en base de datos (`V9__add_datos_paciente_contacto.sql`) porque los mensajes ya existentes, creados antes de este cambio, no tienen estos datos — la obligatoriedad se aplica solo a nivel de DTO/validación para peticiones nuevas.
+- **Probado**: ✅ 201 con `estado: NUEVO` y todos los campos nuevos guardados correctamente (incluyendo acentos, ej. "1 año"); `400` con email mal formado y campos obligatorios vacíos (mensaje de validación lista todos los errores a la vez); `400` con JSON malformado (antes daba `500`, ver más abajo).
+- **Nota para producción**: al ser público y sin autenticación, en un despliegue real conviene añadir protección anti-spam (rate limiting por IP, reCAPTCHA, o un WAF delante) — no implementado en esta fase. Más relevante ahora que el formulario captura más datos y es más "valioso" para spam.
+- **Bug encontrado y corregido (no específico de este endpoint)**: un JSON malformado o con bytes UTF-8 inválidos en el body caía en el `@ExceptionHandler(Exception.class)` genérico y devolvía `500` en vez de `400` — un error de formato del cliente no es un error del servidor. Se añadió un handler específico para `HttpMessageNotReadableException` que devuelve `400 Bad Request`. Reproducido a propósito (enviando bytes UTF-8 inválidos) y confirmado el fix.
 
 ## 21. `GET /api/contacto`
 
