@@ -190,4 +190,71 @@ Esto confirma que el aislamiento de datos por terapeuta y el control de acceso p
 
 ## Resumen: 13/13 endpoints probados y documentados ✅
 
-Próximo dominio a construir: **Citas** (agenda), que añadirá nuevos endpoints a partir del 14.
+---
+
+# Dominio: Citas (agenda)
+
+Vincula `Paciente` + `Terapeuta` (`Usuario`) + `Servicio`, con fecha/hora, duración, estado (`PROGRAMADA`, `COMPLETADA`, `CANCELADA`, `NO_ASISTIO`) y notas. Es el dominio más complejo del backend porque implementa **detección de solapamiento de horario**: un terapeuta no puede tener dos citas activas (no canceladas) que se pisen en el tiempo.
+
+Cómo funciona la comprobación (`CitaService.verificarSinSolapamiento`): al crear o mover una cita, se cargan todas las citas de ese terapeuta ese mismo día (excluyendo las `CANCELADA`) y se comprueba en memoria si el rango `[fechaHora, fechaHora + duración)` se cruza con el de alguna existente. Si hay cruce, `409 Conflict`.
+
+## 14. `POST /api/citas`
+
+- **Para qué sirve**: reservar una cita nueva.
+- **Acceso**: requiere token. El `terapeuta` de la cita es el usuario autenticado, salvo que sea `ADMIN` y especifique `terapeutaId`. El `paciente` debe pertenecer a ese terapeuta (o el usuario ser `ADMIN`).
+- **Base de datos**: `SELECT` de paciente/servicio/terapeuta para validarlos, `SELECT` de citas del día para comprobar solapamiento, `INSERT` en `citas`.
+- **Request** (`api-examples/14-citas-create.json`):
+```json
+{ "pacienteId": 3, "servicioId": 3, "fechaHora": "2026-09-10T10:00:00", "notas": "Primera valoracion" }
+```
+  - `duracionMinutos` es opcional: si no se manda, se usa la duración por defecto del `Servicio`.
+- **Probado**: ✅ 201 con duración heredada del servicio (45 min); `404` con `pacienteId` inexistente; `400` sin `fechaHora`; `403` sin token.
+- **Probado (regla de negocio central)**: ✅ crear una segunda cita que se solapa con la primera (mismo terapeuta, dentro del rango horario) → **409 Conflict** ("El terapeuta ya tiene una cita en ese horario"); crear una cita justo después de que termine la anterior → **201**, sin conflicto.
+
+## 15. `GET /api/citas`
+
+- **Para qué sirve**: listar citas, paginado, ordenado por `fechaHora` por defecto.
+- **Acceso**: requiere token. `TERAPEUTA` solo ve las suyas; `ADMIN` ve todas.
+- **Base de datos**: `SELECT` sobre `citas` (filtrado por `terapeuta_id` si no es admin).
+- **Probado**: ✅ 200 con las citas creadas.
+
+## 16. `GET /api/citas/{id}`
+
+- **Para qué sirve**: obtener una cita concreta.
+- **Acceso**: requiere token, con el mismo control de acceso (propio terapeuta o `ADMIN`).
+- **Base de datos**: `SELECT ... WHERE id = ?`.
+- **Probado**: ✅ 200 con los datos completos (paciente, terapeuta y servicio "expandidos" con nombre, no solo el id).
+
+## 17. `PUT /api/citas/{id}`
+
+- **Para qué sirve**: reprogramar una cita (cambiar fecha/hora, paciente, servicio o notas). Vuelve a comprobar el solapamiento, excluyendo la propia cita que se está editando.
+- **Acceso**: mismo control que el resto.
+- **Base de datos**: `SELECT` + `UPDATE` (dirty checking), más la consulta de solapamiento.
+- **Request** (`api-examples/17-citas-update.json`):
+```json
+{ "pacienteId": 3, "servicioId": 3, "fechaHora": "2026-09-10T09:00:00", "notas": "Movida de horario" }
+```
+- **Probado**: ✅ 200, cita movida de las 10:00 a las 09:00 sin problema (no colisiona consigo misma).
+
+## 18. `PATCH /api/citas/{id}/estado`
+
+- **Para qué sirve**: cambiar solo el estado de una cita (marcarla como completada, no asistida, etc.) sin tocar el resto de datos. Endpoint separado de `PUT` a propósito, porque cambiar el estado es una acción distinta a reprogramar.
+- **Acceso**: mismo control que el resto.
+- **Base de datos**: `UPDATE citas SET estado = ?`.
+- **Request** (`api-examples/18-citas-cambiar-estado.json`):
+```json
+{ "estado": "COMPLETADA" }
+```
+- **Probado**: ✅ 200, `estado` pasa de `PROGRAMADA` a `COMPLETADA`.
+
+## 19. `DELETE /api/citas/{id}`
+
+- **Para qué sirve**: cancelar una cita. No es un borrado físico: pone `estado = CANCELADA`, conservando el historial (nunca se pierde el registro de que existió esa cita).
+- **Acceso**: mismo control que el resto.
+- **Base de datos**: `UPDATE citas SET estado = 'CANCELADA'`.
+- **Probado**: ✅ 204; verificado con `GET` posterior que el estado queda en `CANCELADA`.
+- **Probado (detalle de negocio)**: ✅ una vez cancelada, su hueco horario **vuelve a estar disponible** — se pudo crear una cita nueva exactamente a la misma hora que la cancelada, confirmando que la comprobación de solapamiento excluye correctamente las citas `CANCELADA`.
+
+## Resumen: 19/19 endpoints probados y documentados ✅
+
+Próximos dominios sugeridos: formulario de contacto público (leads) y/o cursos con inscripción — ver conversación para el orden acordado.
