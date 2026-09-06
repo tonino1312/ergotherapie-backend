@@ -12,6 +12,7 @@ import java.util.List;
 public class UserPrincipal implements UserDetails {
 
     private final Long id;
+    private final String nombre;
     private final String email;
     private final String passwordHash;
     private final boolean activo;
@@ -19,6 +20,7 @@ public class UserPrincipal implements UserDetails {
 
     public UserPrincipal(Usuario usuario) {
         this.id = usuario.getId();
+        this.nombre = usuario.getNombre();
         this.email = usuario.getEmail();
         this.passwordHash = usuario.getPasswordHash();
         this.activo = usuario.isActivo();
@@ -27,6 +29,10 @@ public class UserPrincipal implements UserDetails {
 
     public Long getId() {
         return id;
+    }
+
+    public String getNombre() {
+        return nombre;
     }
 
     public Rol getRol() {

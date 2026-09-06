@@ -68,6 +68,25 @@ Estado del proyecto en el momento de este documento: rama `feature/DesarrolloERG
 
 ---
 
+## 3b. `POST /api/auth/google`
+
+- **Para qué sirve**: login alternativo para el equipo (terapeutas/admin) usando su cuenta de Google, vinculada por email a un `Usuario` ya existente. No crea usuarios nuevos — si el email de Google no corresponde a ningún miembro del equipo, se rechaza.
+- **Acceso**: público (el token de Google es la propia prueba de identidad).
+- **Verificación de seguridad**: el `idToken` recibido se valida criptográficamente contra las claves públicas de Google (JWKS en `https://www.googleapis.com/oauth2/v3/certs`, vía `GoogleTokenVerifier` con `NimbusJwtDecoder`), comprobando firma, emisor (`accounts.google.com`), audiencia (debe coincidir con `app.google.client-id`) y que el email esté verificado. Nunca se confía en datos que pudiera manipular el cliente.
+- **Base de datos**: `SELECT` sobre `usuarios` por el email verificado por Google.
+- **Configuración**: requiere `GOOGLE_CLIENT_ID` (variable de entorno) — mientras no se configure, el endpoint siempre devuelve 401 de forma segura (fail-closed), nunca acepta tokens sin verificar la audiencia.
+- **Request**:
+```json
+{ "idToken": "<id_token emitido por Google Identity Services>" }
+```
+- **Respuesta (200)**: igual formato que `/api/auth/login`.
+- **Errores**:
+  - `401` si el token es inválido, ha caducado, o `GOOGLE_CLIENT_ID` no está configurado
+  - `403` si el email de Google es válido pero no corresponde a ningún usuario del equipo (o está desactivado)
+- **Probado**: ✅ `401` con token falso y sin `GOOGLE_CLIENT_ID` configurado (comportamiento fail-closed correcto). Pendiente de probar el camino feliz completo hasta que se configuren credenciales reales de Google Cloud Console.
+
+---
+
 ## 4. `GET /api/servicios`
 
 - **Para qué sirve**: listar el catálogo de servicios activos, paginado.
@@ -303,6 +322,6 @@ Inspirado en el formulario de contacto de `ergotherapie-kids.de` (nombre, email,
 ```
 - **Probado**: ✅ 200, `estado` pasa de `NUEVO` a `LEIDO`.
 
-## Resumen: 23/23 endpoints probados y documentados ✅
+## Resumen: 24/24 endpoints — 23 probados end-to-end + 1 (`/api/auth/google`) probado parcialmente (pendiente de credenciales reales de Google)
 
 Próximo dominio sugerido: **Cursos** con inscripción — ver conversación para el orden acordado.

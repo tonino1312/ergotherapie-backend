@@ -35,6 +35,16 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.UNAUTHORIZED, "Email o contraseña incorrectos", request);
     }
 
+    @ExceptionHandler(InvalidGoogleTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidGoogleToken(InvalidGoogleTokenException ex, HttpServletRequest request) {
+        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(GoogleAccountNotLinkedException.class)
+    public ResponseEntity<ErrorResponse> handleGoogleAccountNotLinked(GoogleAccountNotLinkedException ex, HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta acción", request);

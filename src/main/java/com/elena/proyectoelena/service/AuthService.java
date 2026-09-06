@@ -1,11 +1,15 @@
 package com.elena.proyectoelena.service;
 
+import com.elena.proyectoelena.dto.auth.GoogleLoginRequest;
 import com.elena.proyectoelena.dto.auth.LoginRequest;
 import com.elena.proyectoelena.dto.auth.LoginResponse;
 import com.elena.proyectoelena.dto.auth.RegisterRequest;
 import com.elena.proyectoelena.exception.EmailAlreadyExistsException;
+import com.elena.proyectoelena.exception.GoogleAccountNotLinkedException;
 import com.elena.proyectoelena.model.Usuario;
 import com.elena.proyectoelena.repository.UsuarioRepository;
+import com.elena.proyectoelena.security.GoogleTokenVerifier;
+import com.elena.proyectoelena.security.GoogleUserInfo;
 import com.elena.proyectoelena.security.JwtService;
 import com.elena.proyectoelena.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +29,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
@@ -33,6 +38,20 @@ public class AuthService {
 
         Usuario usuario = usuarioRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BadCredentialsException("Email o contraseña incorrectos"));
+
+        String token = jwtService.generateToken(new UserPrincipal(usuario));
+
+        return new LoginResponse(token, usuario.getNombre(), usuario.getEmail(), usuario.getRol().name());
+    }
+
+    @Transactional(readOnly = true)
+    public LoginResponse loginWithGoogle(GoogleLoginRequest request) {
+        GoogleUserInfo googleUser = googleTokenVerifier.verify(request.idToken());
+
+        Usuario usuario = usuarioRepository.findByEmail(googleUser.email())
+                .filter(Usuario::isActivo)
+                .orElseThrow(() -> new GoogleAccountNotLinkedException(
+                        "Tu cuenta de Google (" + googleUser.email() + ") no está vinculada a ningún usuario del equipo"));
 
         String token = jwtService.generateToken(new UserPrincipal(usuario));
 
