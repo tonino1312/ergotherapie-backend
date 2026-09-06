@@ -1,5 +1,6 @@
 package com.elena.proyectoelena.controller;
 
+import com.elena.proyectoelena.dto.auth.GoogleLoginRequest;
 import com.elena.proyectoelena.dto.auth.LoginRequest;
 import com.elena.proyectoelena.dto.auth.LoginResponse;
 import com.elena.proyectoelena.dto.cliente.RegistroClienteRequest;
@@ -31,5 +32,10 @@ public class ClienteAuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(clienteAuthService.login(request));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<LoginResponse> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
+        return ResponseEntity.ok(clienteAuthService.loginWithGoogle(request));
     }
 }

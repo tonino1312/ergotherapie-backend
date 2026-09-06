@@ -116,6 +116,17 @@ Cuentas para "cualquier visitante" — **completamente separadas** de `usuarios`
 - **Errores**: `401` si el email o la contraseña no son correctos.
 - **Probado**: ✅ OK, incluido el 401 con contraseña incorrecta, y confirmado que un token de `CLIENTE` recibe `403` al intentar acceder a `/api/pacientes` (aislamiento correcto).
 
+## 3e. `POST /api/clientes/google`
+
+- **Para qué sirve**: login con Google para visitantes. **Diferencia clave con `/api/auth/google` (staff)**: aquí SÍ se auto-crea la cuenta la primera vez — un visitante que nunca se había registrado y entra con Google queda registrado automáticamente (equivale a "regístrate con Google"). La cuenta creada así recibe una contraseña aleatoria e inutilizable (no se puede usar para entrar por email+contraseña) hasta que el usuario decida establecer una en el futuro.
+- **Acceso**: público.
+- **Verificación de seguridad**: mismo `GoogleTokenVerifier` que el login de staff (firma, emisor y audiencia verificados contra el JWKS de Google).
+- **Base de datos**: `SELECT` sobre `clientes` por email; si no existe, `INSERT`.
+- **Configuración**: mismo `GOOGLE_CLIENT_ID` que el resto de login con Google. Sin configurar, `401` fail-closed (verificado).
+- **Efecto secundario**: mismo email de notificación de login.
+- **Request**: `{ "idToken": "<id_token de Google>" }`.
+- **Probado**: ✅ `401` con `GOOGLE_CLIENT_ID` sin configurar. Pendiente el camino feliz hasta tener credenciales reales.
+
 ---
 
 ## 4. `GET /api/servicios`
@@ -353,6 +364,6 @@ Inspirado en el formulario de contacto de `ergotherapie-kids.de` (nombre, email,
 ```
 - **Probado**: ✅ 200, `estado` pasa de `NUEVO` a `LEIDO`.
 
-## Resumen: 26/26 endpoints — 25 probados end-to-end + 1 (`/api/auth/google`) probado parcialmente (pendiente de credenciales reales de Google)
+## Resumen: 27/27 endpoints — 25 probados end-to-end + 2 (`/api/auth/google`, `/api/clientes/google`) probados parcialmente (pendiente de credenciales reales de Google)
 
 Próximo dominio sugerido: **Cursos** con inscripción — ver conversación para el orden acordado.
