@@ -4,6 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 logs/
+backend.log
 
 ### STS ###
 .apt_generated

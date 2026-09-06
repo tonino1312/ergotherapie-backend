@@ -30,6 +30,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final GoogleTokenVerifier googleTokenVerifier;
+    private final EmailService emailService;
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
@@ -40,6 +41,7 @@ public class AuthService {
                 .orElseThrow(() -> new BadCredentialsException("Email o contraseña incorrectos"));
 
         String token = jwtService.generateToken(new UserPrincipal(usuario));
+        emailService.enviarNotificacionLogin(usuario.getEmail(), usuario.getNombre(), "email y contraseña");
 
         return new LoginResponse(token, usuario.getNombre(), usuario.getEmail(), usuario.getRol().name());
     }
@@ -54,6 +56,7 @@ public class AuthService {
                         "Tu cuenta de Google (" + googleUser.email() + ") no está vinculada a ningún usuario del equipo"));
 
         String token = jwtService.generateToken(new UserPrincipal(usuario));
+        emailService.enviarNotificacionLogin(usuario.getEmail(), usuario.getNombre(), "Google");
 
         return new LoginResponse(token, usuario.getNombre(), usuario.getEmail(), usuario.getRol().name());
     }

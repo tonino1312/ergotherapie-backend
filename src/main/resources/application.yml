@@ -12,6 +12,8 @@ app:
     # mientras no se configure, el login con Google siempre rechaza el token
     # (audiencia nunca coincide con cadena vacía) en vez de fallar de forma insegura.
     client-id: ${GOOGLE_CLIENT_ID:}
+  mail:
+    from: ${MAIL_FROM:no-reply@ergotherapie.local}
 
 ---
 spring:
@@ -31,6 +33,17 @@ spring:
         format_sql: true
   flyway:
     enabled: true
+  mail:
+    # Mailpit (docker-compose): servidor SMTP falso para dev, sin auth ni TLS.
+    # Interfaz web para ver los correos enviados: http://localhost:8025
+    host: localhost
+    port: 1025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
 app:
   jwt:
@@ -58,10 +71,23 @@ spring:
     show-sql: false
   flyway:
     enabled: true
+  mail:
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 app:
   jwt:
     secret: ${JWT_SECRET}
+  mail:
+    from: ${MAIL_FROM}
 
 logging:
   level:

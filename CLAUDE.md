@@ -37,10 +37,16 @@ Backend con **Java 21 + Spring Boot 4.1.1** para la gestión de una consulta de 
 - Requiere `GOOGLE_CLIENT_ID` configurado (mismo Client ID que usa el frontend). Sin configurar, el endpoint falla siempre en seguro (`401`), nunca deja pasar un token sin comprobar audiencia.
 - Ver `docs/API.md` (endpoint `POST /api/auth/google`) para el detalle completo.
 
+## Notificación de login por email
+- `EmailService.enviarNotificacionLogin` (`@Async`, no bloquea el login ni lo hace fallar si el envío falla): se dispara en `AuthService.login()` y `AuthService.loginWithGoogle()`, para cualquier rol (`ADMIN` o `TERAPEUTA`).
+- En `dev`, el SMTP apunta a **Mailpit** (`compose.yaml`, servicio `mailpit`) — servidor SMTP falso, sin credenciales reales. Ver los correos enviados en `http://localhost:8025`.
+- **Importante**: si Postgres ya estaba corriendo de una sesión anterior, Spring Boot's Docker Compose support detecta "servicios ya corriendo" y **no** arranca los servicios nuevos que se añadan a `compose.yaml` (como `mailpit`). Si añades un servicio nuevo, ejecuta `docker compose up -d` manualmente una vez.
+- En `prod`, requiere `SMTP_HOST`, `SMTP_USERNAME`, `SMTP_PASSWORD` y `MAIL_FROM` (variables de entorno, sin defaults).
+
 ## Configuración
 - `application.yml` con perfiles `dev`/`prod` (activo por defecto: `dev`)
-- Credenciales de BD, JWT y Google vía variables de entorno (`DB_USERNAME`, `DB_PASSWORD`, `DB_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`) — nunca hardcodeadas. En `dev` hay defaults locales solo para desarrollo (`GOOGLE_CLIENT_ID` vacío por defecto).
-- Para arrancar en local: `./mvnw spring-boot:run` (con Docker Desktop abierto) — Postgres se crea solo la primera vez.
+- Credenciales de BD, JWT, Google y SMTP vía variables de entorno (`DB_USERNAME`, `DB_PASSWORD`, `DB_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `SMTP_HOST`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `MAIL_FROM`) — nunca hardcodeadas. En `dev` hay defaults locales solo para desarrollo (`GOOGLE_CLIENT_ID` vacío, SMTP apunta a Mailpit).
+- Para arrancar en local: `./mvnw spring-boot:run` (con Docker Desktop abierto) — Postgres y Mailpit se crean solos la primera vez (ver aviso arriba sobre servicios nuevos si ya había contenedores corriendo).
 
 ## Convenciones de código
 - Seguir las convenciones estándar de Java (nombres de paquetes en minúsculas, clases en PascalCase, métodos/variables en camelCase).

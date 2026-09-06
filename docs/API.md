@@ -42,7 +42,8 @@ Estado del proyecto en el momento de este documento: rama `feature/DesarrolloERG
 }
 ```
 - **Errores esperados**: `401` si el email o la contraseña no son correctos.
-- **Probado**: ✅ OK.
+- **Efecto secundario**: envía un email de notificación de inicio de sesión al usuario (asíncrono, no bloquea la respuesta ni falla el login si el envío falla — ver `EmailService`). Se aplica a cualquier rol (`ADMIN` o `TERAPEUTA`).
+- **Probado**: ✅ OK, incluido el email (verificado en Mailpit, `http://localhost:8025` en dev).
 
 ---
 
@@ -83,6 +84,7 @@ Estado del proyecto en el momento de este documento: rama `feature/DesarrolloERG
 - **Errores**:
   - `401` si el token es inválido, ha caducado, o `GOOGLE_CLIENT_ID` no está configurado
   - `403` si el email de Google es válido pero no corresponde a ningún usuario del equipo (o está desactivado)
+- **Efecto secundario**: mismo email de notificación de login que en `/api/auth/login` (indica el método usado: "Google").
 - **Probado**: ✅ `401` con token falso y sin `GOOGLE_CLIENT_ID` configurado (comportamiento fail-closed correcto). Pendiente de probar el camino feliz completo hasta que se configuren credenciales reales de Google Cloud Console.
 
 ---
