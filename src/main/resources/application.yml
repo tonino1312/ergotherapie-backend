@@ -35,6 +35,8 @@ app:
 logging:
   level:
     com.elena.proyectoelena: DEBUG
+  file:
+    name: logs/proyecto-elena.log
 
 ---
 spring:

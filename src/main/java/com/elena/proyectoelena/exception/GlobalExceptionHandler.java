@@ -1,6 +1,7 @@
 package com.elena.proyectoelena.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -32,6 +33,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, "No tienes permisos para realizar esta acción", request);
+    }
+
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidQueryParam(InvalidDataAccessApiUsageException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "Parámetro de consulta inválido (revisa 'sort')", request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
