@@ -8,6 +8,13 @@ spring:
       max-file-size: 15MB
       max-request-size: 15MB
 
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      force-request: true
+      force-response: true
+
 app:
   jwt:
     expiration-ms: 86400000 # 24h

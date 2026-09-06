@@ -6,6 +6,7 @@ target/
 logs/
 backend.log
 uploads/
+fotos-pendientes/
 
 ### STS ###
 .apt_generated
