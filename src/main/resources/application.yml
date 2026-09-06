@@ -3,6 +3,10 @@ spring:
     name: proyecto-elena
   profiles:
     active: dev
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 15MB
 
 app:
   jwt:
@@ -14,6 +18,11 @@ app:
     client-id: ${GOOGLE_CLIENT_ID:}
   mail:
     from: ${MAIL_FROM:no-reply@ergotherapie.local}
+  uploads:
+    # Carpeta en disco donde se guardan los archivos subidos (imagenes, etc.).
+    # En prod, sustituir por almacenamiento en S3 u otro object storage.
+    dir: ${UPLOADS_DIR:./uploads}
+    public-path: /uploads
 
 ---
 spring:

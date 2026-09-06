@@ -31,6 +31,7 @@ public class SecurityConfig {
             "/api/clientes/login",
             "/api/clientes/google",
             "/api/health",
+            "/uploads/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html"
@@ -46,6 +47,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/servicios", "/api/servicios/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/imagenes").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/contacto").permitAll()
                         .anyRequest().authenticated()
                 )

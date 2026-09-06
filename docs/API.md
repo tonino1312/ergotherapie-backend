@@ -366,4 +366,42 @@ Inspirado en el formulario de contacto de `ergotherapie-kids.de` (nombre, email,
 
 ## Resumen: 27/27 endpoints — 25 probados end-to-end + 2 (`/api/auth/google`, `/api/clientes/google`) probados parcialmente (pendiente de credenciales reales de Google)
 
+---
+
+# Dominio: Imágenes
+
+El archivo en sí **no se guarda en la base de datos** (eso sería mala práctica: infla la BD, complica backups). Se guarda en disco (`app.uploads.dir`, por defecto `./uploads/`, fuera de git) y la tabla `imagenes` solo guarda los metadatos: categoría, nombre de archivo, texto alternativo (accesibilidad) y orden. En producción, `FileStorageService` es el único sitio que habría que cambiar para hablar con S3 u otro object storage en vez de disco local — el resto del código no sabe ni le importa dónde vive el archivo físicamente.
+
+Categorías disponibles (`CategoriaImagen`): `CARRUSEL_INICIO`, `HERO`, `SERVICIOS`, `GENERAL`.
+
+## 28. `GET /api/imagenes`
+
+- **Para qué sirve**: listar las imágenes activas de una categoría, ordenadas.
+- **Acceso**: público.
+- **Base de datos**: `SELECT` sobre `imagenes WHERE categoria = ? AND activo = true ORDER BY orden`.
+- **Query params**: `categoria` (obligatorio, uno de los valores de `CategoriaImagen`).
+- **Respuesta (200)**:
+```json
+[{ "id": 2, "categoria": "CARRUSEL_INICIO", "url": "/uploads/71ce42cf-....png", "textoAlternativo": "Sala de terapia", "orden": 1 }]
+```
+- **Probado**: ✅ OK.
+
+## 29. `POST /api/imagenes`
+
+- **Para qué sirve**: subir una imagen nueva (multipart/form-data).
+- **Acceso**: requiere token con rol `ADMIN`.
+- **Campos del form**: `archivo` (el fichero), `categoria`, `textoAlternativo`, `orden` (opcional, por defecto 0).
+- **Qué hace**: guarda el archivo en disco con un nombre aleatorio (UUID + extensión original) — **nunca** se usa el nombre original del archivo para la ruta en disco, evita colisiones y ataques de path traversal. Inserta la fila en `imagenes`.
+- **Límite de tamaño**: 15MB por archivo (`spring.servlet.multipart.max-file-size`).
+- **Probado**: ✅ 201 con token ADMIN; 403 sin token. Se encontró y corrigió un bug real durante las pruebas (ver más abajo).
+- **Bug encontrado y corregido**: el directorio de subidas solo se creaba una vez, al arrancar la aplicación (`FileStorageService`, constructor). Si el directorio se borraba después (por ejemplo, limpiando archivos de prueba a mano) el siguiente `POST` fallaba con `500` — y además el `GlobalExceptionHandler` **no registraba la excepción en el log**, así que era casi imposible saber por qué. Fix: `Files.createDirectories()` ahora también se llama en cada `guardar()`, no solo en el constructor; y el handler genérico de `Exception` ahora hace `log.error(..., ex)` antes de responder. Reproducido el bug a propósito, confirmado el fix, y confirmado que ahora sí queda registrado en el log.
+
+## 30. `DELETE /api/imagenes/{id}`
+
+- **Para qué sirve**: quitar una imagen (borrado lógico, `activo=false` — el archivo en disco no se borra).
+- **Acceso**: requiere token con rol `ADMIN`.
+- **Probado**: ✅ 204, y confirmado que desaparece del listado tras el borrado.
+
+## Resumen: 30/30 endpoints
+
 Próximo dominio sugerido: **Cursos** con inscripción — ver conversación para el orden acordado.

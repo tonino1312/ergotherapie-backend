@@ -29,8 +29,9 @@ Backend con **Java 21 + Spring Boot 4.1.1** para la gestión de una consulta de 
 - **Citas** (`Cita`, vincula Paciente + Terapeuta + Servicio): CRUD + cambio de estado en `/api/citas`, protegido con JWT, mismo aislamiento por terapeuta que Pacientes. Incluye **detección de solapamiento de horario** (`CitaService.verificarSinSolapamiento`): no se puede crear/mover una cita si choca con otra cita activa del mismo terapeuta ese día → `409 Conflict`. Cancelar (`DELETE`) pone `estado=CANCELADA` (no borra físicamente) y libera el hueco horario.
 - **Contacto** (`MensajeContacto`): `POST /api/contacto` público (formulario de la web), resto (`GET`, `PATCH .../estado`) requiere token pero SIN aislamiento por terapeuta — bandeja compartida de todo el equipo. Flujo de estado `NUEVO` → `LEIDO` → `RESPONDIDO`/`DESCARTADO`. Sin `PUT` (el mensaje lo escribe el visitante) ni `DELETE` físico (los leads quedan como histórico).
 - **Clientes** (`Cliente`, tabla y rol `CLIENTE` **totalmente separados** de `usuarios`/staff): auto-registro público (`POST /api/clientes/registro`), login (`POST /api/clientes/login`) y login con Google (`POST /api/clientes/google` — a diferencia del de staff, este SÍ auto-crea la cuenta la primera vez, ya que los visitantes pueden auto-registrarse). Sin funcionalidad especial todavía — es la base para features públicas futuras (ver historial propio, reservar citas, etc.). Un JWT de `CLIENTE` no puede acceder a ningún endpoint de staff (verificado: `403` en `/api/pacientes`), porque `CustomUserDetailsService` solo resuelve identidades contra `usuarios`.
+- **Imágenes** (`Imagen`, categorías `CARRUSEL_INICIO`/`HERO`/`SERVICIOS`/`GENERAL`): `GET /api/imagenes?categoria=X` público, `POST`/`DELETE` solo `ADMIN`. El archivo **no se guarda en la BD** (mala práctica) — vive en disco (`FileStorageService`, `app.uploads.dir`, gitignored) con nombre aleatorio (UUID), servido como estático en `/uploads/**`; la tabla solo guarda metadatos. Cambiar a S3 en producción significa tocar solo `FileStorageService`, nada más.
 - Usuario admin sembrado en `V3__seed_admin_inicial.sql`: `admin@ergotherapie.local` / `CambiaEstaClave123!` — **cambiar esta contraseña de inmediato**, es solo para arrancar el sistema.
-- **27 endpoints en total**, todos probados y documentados en `docs/API.md` (con JSON de ejemplo en `api-examples/`).
+- **30 endpoints en total**, todos probados y documentados en `docs/API.md` (con JSON de ejemplo en `api-examples/`).
 
 ## Login con Google (staff)
 - `GoogleTokenVerifier` (`security/`) verifica el `idToken` contra las claves públicas de Google (JWKS), comprobando firma, emisor y audiencia — nunca confía en datos del cliente sin verificar.
@@ -62,6 +63,9 @@ Backend con **Java 21 + Spring Boot 4.1.1** para la gestión de una consulta de 
 - Tests con JUnit 5 y Mockito para lógica de negocio; tests de integración con `@SpringBootTest` cuando aporte valor real (considerar Testcontainers para tests contra Postgres real).
 - No dejar código muerto ni comentarios explicando "qué hace" el código (el código debe ser autoexplicativo); comentarios solo para explicar decisiones no obvias.
 - Configuración sensible (credenciales, claves) en variables de entorno, nunca hardcodeada ni commiteada.
+
+## Flujo de fotos reales
+- El usuario deja archivos en `fotos-pendientes/` (carpeta gitignored en la raíz del repo, fuera de `src/`). Cuando lo haga: subirlas vía `POST /api/imagenes` (multipart, con `categoria`/`textoAlternativo`/`orden` apropiados según dónde vayan a usarse) y comprobar que aparecen bien en el frontend antes de dar el trabajo por terminado.
 
 ## Pendiente / próximos pasos
 - Cursos con inscripción — inspirado en ergotherapie-kids.de, ver `docs/API.md` para el contexto.
