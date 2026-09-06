@@ -1,0 +1,8 @@
+{
+  "nombre": "Pablo",
+  "apellidos": "Martinez Diaz",
+  "fechaNacimiento": "2018-04-12",
+  "email": "pablo.nuevo@example.com",
+  "telefono": "600222333",
+  "notasClinicas": "Primera sesion realizada, buena evolucion"
+}

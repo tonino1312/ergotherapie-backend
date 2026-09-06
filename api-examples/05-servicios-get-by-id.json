@@ -1,0 +1,4 @@
+{
+  "_nota": "GET /api/servicios/{id} tampoco lleva body. El id va en la URL, como parametro de ruta.",
+  "id": 1
+}

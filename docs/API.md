@@ -90,14 +90,104 @@ Estado del proyecto en el momento de este documento: rama `feature/DesarrolloERG
 
 ---
 
-## Pendiente de documentar (siguiente en la lista)
+## 5. `GET /api/servicios/{id}`
 
-5. `GET /api/servicios/{id}`
-6. `POST /api/servicios`
-7. `PUT /api/servicios/{id}`
-8. `DELETE /api/servicios/{id}`
-9. `GET /api/pacientes`
-10. `GET /api/pacientes/{id}`
-11. `POST /api/pacientes`
-12. `PUT /api/pacientes/{id}`
-13. `DELETE /api/pacientes/{id}`
+- **Para qué sirve**: obtener un servicio concreto por id.
+- **Acceso**: público.
+- **Base de datos**: `SELECT ... WHERE id = ? AND activo = true`.
+- **Probado**: ✅ id existente → 200 con los datos; id inexistente (`999`) → 404 con mensaje descriptivo.
+
+---
+
+## 6. `POST /api/servicios`
+
+- **Para qué sirve**: crear un nuevo servicio en el catálogo.
+- **Acceso**: solo `ADMIN`.
+- **Base de datos**: `INSERT` en `servicios`.
+- **Request** de ejemplo:
+```json
+{ "nombre": "Grupo de Juego", "descripcion": "Sesion grupal para desarrollo psicomotor", "idioma": "ALEMAN", "duracionMinutos": 90 }
+```
+- **Probado**: ✅ con token ADMIN → 201 y el recurso creado; sin token → 403; con `nombre` vacío → 400 con el mensaje de validación (`"nombre: El nombre es obligatorio"`).
+
+---
+
+## 7. `PUT /api/servicios/{id}`
+
+- **Para qué sirve**: actualizar un servicio existente.
+- **Acceso**: solo `ADMIN`.
+- **Base de datos**: `SELECT` + `UPDATE` (vía dirty checking de JPA, dentro de la transacción del servicio).
+- **Probado**: ✅ 200 con los datos actualizados.
+
+---
+
+## 8. `DELETE /api/servicios/{id}`
+
+- **Para qué sirve**: dar de baja un servicio (borrado lógico: `activo = false`, la fila no se borra físicamente).
+- **Acceso**: solo `ADMIN`.
+- **Base de datos**: `UPDATE servicios SET activo = false WHERE id = ?`.
+- **Probado**: ✅ 204 sin body; verificado que tras el borrado ya no aparece en `GET /api/servicios` y que `GET /api/servicios/{id}` de ese mismo id da 404 (queda "invisible" para la API aunque siga en la tabla).
+
+---
+
+## 9. `GET /api/pacientes`
+
+- **Para qué sirve**: listar pacientes, paginado.
+- **Acceso**: requiere token. Si el usuario es `TERAPEUTA`, solo ve los pacientes donde él es el `terapeuta` asignado; si es `ADMIN`, ve todos.
+- **Base de datos**: `SELECT` sobre `pacientes WHERE activo = true` (y `AND terapeuta_id = ?` si no es admin).
+- **Probado**: ✅ como `ADMIN` ve todos los pacientes; sin token → 403. Además se probó específicamente que un `TERAPEUTA` que no tiene pacientes asignados recibe una lista vacía, no los de otros (ver nota de seguridad al final del documento).
+
+---
+
+## 10. `GET /api/pacientes/{id}`
+
+- **Para qué sirve**: obtener un paciente concreto.
+- **Acceso**: requiere token; un `TERAPEUTA` solo puede ver los suyos (si no, `403`); `ADMIN` puede ver cualquiera.
+- **Base de datos**: `SELECT ... WHERE id = ? AND activo = true`, luego se verifica en código que el `terapeuta_id` coincida con el usuario autenticado (o que sea `ADMIN`).
+- **Probado**: ✅ id existente y propio → 200; id inexistente → 404; id de un paciente ajeno (con un `TERAPEUTA` sin permiso) → 403.
+
+---
+
+## 11. `POST /api/pacientes`
+
+- **Para qué sirve**: dar de alta un paciente nuevo.
+- **Acceso**: requiere token (cualquier rol). El paciente se asigna automáticamente al usuario autenticado como terapeuta, salvo que sea `ADMIN` y especifique `terapeutaId` en el body.
+- **Base de datos**: `INSERT` en `pacientes`.
+- **Request** de ejemplo:
+```json
+{ "nombre": "Pablo", "apellidos": "Martinez Diaz", "fechaNacimiento": "2018-04-12", "email": "pablo.padres@example.com", "telefono": "600222333" }
+```
+- **Probado**: ✅ 201 con el paciente creado y `terapeutaId` asignado correctamente al usuario que hizo la petición.
+
+---
+
+## 12. `PUT /api/pacientes/{id}`
+
+- **Para qué sirve**: actualizar los datos de un paciente (incluidas las notas clínicas).
+- **Acceso**: requiere token, mismo control de acceso que el resto (propio terapeuta o `ADMIN`).
+- **Base de datos**: `SELECT` + `UPDATE` (dirty checking).
+- **Probado**: ✅ 200 con los datos actualizados, incluida la escritura de `notasClinicas`.
+
+---
+
+## 13. `DELETE /api/pacientes/{id}`
+
+- **Para qué sirve**: dar de baja a un paciente (borrado lógico).
+- **Acceso**: requiere token, mismo control de acceso.
+- **Base de datos**: `UPDATE pacientes SET activo = false WHERE id = ?`.
+- **Probado**: ✅ 204, y confirmado que desaparece del listado tras el borrado.
+
+---
+
+## Nota de seguridad verificada (importante)
+
+Se probó explícitamente el caso más crítico de la aplicación: un usuario `TERAPEUTA` (`maria.fernandez@ergotherapie.local`, creado en la prueba del endpoint 3) **no puede ver ni acceder a pacientes de otro terapeuta**, ni realizar acciones de `ADMIN`:
+- `GET /api/pacientes` autenticado como esa terapeuta → lista vacía (el único paciente existente es del `ADMIN`)
+- `GET /api/pacientes/1` (paciente del `ADMIN`) → `403 Forbidden`
+- `POST /api/servicios` (acción de solo-admin) → `403 Forbidden`
+
+Esto confirma que el aislamiento de datos por terapeuta y el control de acceso por rol funcionan como se diseñaron.
+
+## Resumen: 13/13 endpoints probados y documentados ✅
+
+Próximo dominio a construir: **Citas** (agenda), que añadirá nuevos endpoints a partir del 14.

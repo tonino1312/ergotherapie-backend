@@ -1,0 +1,6 @@
+{
+  "_nota": "GET /api/servicios no lleva body. Estos son los query params opcionales que se escriben como campos sueltos en Swagger, no como JSON en un body.",
+  "page": 0,
+  "size": 10,
+  "sort": "nombre,asc"
+}
