@@ -23,7 +23,7 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(UserPrincipal principal) {
+    public String generateToken(TokenPrincipal principal) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
 
@@ -31,7 +31,7 @@ public class JwtService {
                 .subject(principal.getUsername())
                 .claim("uid", principal.getId())
                 .claim("nombre", principal.getNombre())
-                .claim("rol", principal.getRol().name())
+                .claim("rol", principal.getRoleName())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(signingKey)

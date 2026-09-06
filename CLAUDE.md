@@ -18,7 +18,7 @@ Backend con **Java 21 + Spring Boot 4.1.1** para la gestión de una consulta de 
 - `model` — entidades JPA
 - `dto/<dominio>` — objetos de entrada/salida de la API (nunca exponer entidades directamente)
 - `mapper` — interfaces MapStruct (entidad → DTO)
-- `security` — `JwtService`, `JwtAuthenticationFilter`, `UserPrincipal`, `CustomUserDetailsService`
+- `security` — `JwtService`, `JwtAuthenticationFilter`, `CustomUserDetailsService`, y dos identidades que implementan `TokenPrincipal` (para que `JwtService` emita el mismo tipo de JWT a ambas sin acoplarse a ninguna): `UserPrincipal` (staff) y `ClientePrincipal` (cuentas públicas)
 - `exception` — excepciones custom + `GlobalExceptionHandler` (`@RestControllerAdvice`)
 - `config` — `SecurityConfig`, `OpenApiConfig`
 
@@ -28,8 +28,9 @@ Backend con **Java 21 + Spring Boot 4.1.1** para la gestión de una consulta de 
 - **Servicios** (`Servicio`, catálogo por idioma): CRUD en `/api/servicios`. Lectura pública (`GET`), escritura solo `ADMIN`. Borrado lógico.
 - **Citas** (`Cita`, vincula Paciente + Terapeuta + Servicio): CRUD + cambio de estado en `/api/citas`, protegido con JWT, mismo aislamiento por terapeuta que Pacientes. Incluye **detección de solapamiento de horario** (`CitaService.verificarSinSolapamiento`): no se puede crear/mover una cita si choca con otra cita activa del mismo terapeuta ese día → `409 Conflict`. Cancelar (`DELETE`) pone `estado=CANCELADA` (no borra físicamente) y libera el hueco horario.
 - **Contacto** (`MensajeContacto`): `POST /api/contacto` público (formulario de la web), resto (`GET`, `PATCH .../estado`) requiere token pero SIN aislamiento por terapeuta — bandeja compartida de todo el equipo. Flujo de estado `NUEVO` → `LEIDO` → `RESPONDIDO`/`DESCARTADO`. Sin `PUT` (el mensaje lo escribe el visitante) ni `DELETE` físico (los leads quedan como histórico).
+- **Clientes** (`Cliente`, tabla y rol `CLIENTE` **totalmente separados** de `usuarios`/staff): auto-registro público (`POST /api/clientes/registro`) y login (`POST /api/clientes/login`). Sin funcionalidad especial todavía — es la base para features públicas futuras (ver historial propio, reservar citas, etc.). Un JWT de `CLIENTE` no puede acceder a ningún endpoint de staff (verificado: `403` en `/api/pacientes`), porque `CustomUserDetailsService` solo resuelve identidades contra `usuarios`.
 - Usuario admin sembrado en `V3__seed_admin_inicial.sql`: `admin@ergotherapie.local` / `CambiaEstaClave123!` — **cambiar esta contraseña de inmediato**, es solo para arrancar el sistema.
-- **24 endpoints en total**, todos probados y documentados en `docs/API.md` (con JSON de ejemplo en `api-examples/`).
+- **26 endpoints en total**, todos probados y documentados en `docs/API.md` (con JSON de ejemplo en `api-examples/`).
 
 ## Login con Google (staff)
 - `GoogleTokenVerifier` (`security/`) verifica el `idToken` contra las claves públicas de Google (JWKS), comprobando firma, emisor y audiencia — nunca confía en datos del cliente sin verificar.

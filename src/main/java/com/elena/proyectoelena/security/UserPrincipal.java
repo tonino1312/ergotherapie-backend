@@ -9,7 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
-public class UserPrincipal implements UserDetails {
+public class UserPrincipal implements UserDetails, TokenPrincipal {
 
     private final Long id;
     private final String nombre;
@@ -27,16 +27,23 @@ public class UserPrincipal implements UserDetails {
         this.rol = usuario.getRol();
     }
 
+    @Override
     public Long getId() {
         return id;
     }
 
+    @Override
     public String getNombre() {
         return nombre;
     }
 
     public Rol getRol() {
         return rol;
+    }
+
+    @Override
+    public String getRoleName() {
+        return rol.name();
     }
 
     @Override

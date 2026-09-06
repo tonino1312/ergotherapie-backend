@@ -89,6 +89,35 @@ Estado del proyecto en el momento de este documento: rama `feature/DesarrolloERG
 
 ---
 
+# Dominio: Clientes (cuentas públicas de visitantes)
+
+Cuentas para "cualquier visitante" — **completamente separadas** de `usuarios` (staff). Sin funcionalidad especial todavía: es la base para futuras features orientadas al público (ver historial propio, reservar citas, etc.). Nunca se mezclan con el rol `ADMIN`/`TERAPEUTA`: un `Cliente` autenticado no puede acceder a ningún endpoint de staff (`CustomUserDetailsService` solo conoce la tabla `usuarios`, así que un JWT de cliente no resuelve a nada ahí y la petición se rechaza).
+
+## 3c. `POST /api/clientes/registro`
+
+- **Para qué sirve**: auto-registro público. Cualquiera puede crear su propia cuenta.
+- **Acceso**: público.
+- **Base de datos**: `SELECT` para comprobar email único; `INSERT` en `clientes` con contraseña cifrada (bcrypt).
+- **Request**:
+```json
+{ "nombre": "Carlos Visitante", "email": "carlos.visitante@example.com", "password": "MiClave1234!" }
+```
+- **Respuesta (201)**: sin body.
+- **Errores**: `409 Conflict` si el email ya existe; `400` si la contraseña tiene menos de 8 caracteres.
+- **Probado**: ✅ OK, incluido el 409 por email duplicado.
+
+## 3d. `POST /api/clientes/login`
+
+- **Para qué sirve**: login de una cuenta de cliente. Devuelve un JWT con `rol: "CLIENTE"` (distinto de `ADMIN`/`TERAPEUTA`).
+- **Acceso**: público.
+- **Base de datos**: `SELECT` sobre `clientes` por email; verifica el hash bcrypt.
+- **Efecto secundario**: mismo email de notificación de login que el resto de logins.
+- **Request**: igual forma que `/api/auth/login` (`email`, `password`).
+- **Errores**: `401` si el email o la contraseña no son correctos.
+- **Probado**: ✅ OK, incluido el 401 con contraseña incorrecta, y confirmado que un token de `CLIENTE` recibe `403` al intentar acceder a `/api/pacientes` (aislamiento correcto).
+
+---
+
 ## 4. `GET /api/servicios`
 
 - **Para qué sirve**: listar el catálogo de servicios activos, paginado.
@@ -324,6 +353,6 @@ Inspirado en el formulario de contacto de `ergotherapie-kids.de` (nombre, email,
 ```
 - **Probado**: ✅ 200, `estado` pasa de `NUEVO` a `LEIDO`.
 
-## Resumen: 24/24 endpoints — 23 probados end-to-end + 1 (`/api/auth/google`) probado parcialmente (pendiente de credenciales reales de Google)
+## Resumen: 26/26 endpoints — 25 probados end-to-end + 1 (`/api/auth/google`) probado parcialmente (pendiente de credenciales reales de Google)
 
 Próximo dominio sugerido: **Cursos** con inscripción — ver conversación para el orden acordado.
