@@ -257,4 +257,52 @@ Cómo funciona la comprobación (`CitaService.verificarSinSolapamiento`): al cre
 
 ## Resumen: 19/19 endpoints probados y documentados ✅
 
-Próximos dominios sugeridos: formulario de contacto público (leads) y/o cursos con inscripción — ver conversación para el orden acordado.
+---
+
+# Dominio: Contacto (leads públicos)
+
+Inspirado en el formulario de contacto de `ergotherapie-kids.de` (nombre, email, asunto, mensaje), pero en vez de depender solo de email/WhatsApp, el mensaje queda guardado en la base de datos como un **lead gestionable desde el backend**, con un flujo de estado (`NUEVO` → `LEIDO` → `RESPONDIDO`, o `DESCARTADO`).
+
+**Diseño de acceso deliberado**: a diferencia de Pacientes/Citas, aquí **no hay aislamiento por terapeuta** — cualquier usuario autenticado (`TERAPEUTA` o `ADMIN`) ve todos los mensajes. Es una bandeja de entrada compartida de todo el equipo, como sería en la vida real (cualquiera puede atender un lead nuevo).
+
+## 20. `POST /api/contacto`
+
+- **Para qué sirve**: el único endpoint público de este dominio — lo llamaría el formulario de la web pública. Crea un mensaje con `estado = NUEVO`.
+- **Acceso**: público, sin token.
+- **Base de datos**: `INSERT` en `mensajes_contacto`.
+- **Request** (`api-examples/20-contacto-create.json`):
+```json
+{ "nombre": "Ana Perez", "email": "ana.perez@example.com", "asunto": "Consulta sobre horarios", "mensaje": "Hola, querria saber si teneis hueco los martes por la tarde." }
+```
+  - `mensaje` es opcional (igual que en la web de referencia); `nombre`, `email` y `asunto` son obligatorios, con límites de longitud para evitar abuso (`nombre` ≤150, `asunto` ≤200, `mensaje` ≤5000 caracteres).
+- **Probado**: ✅ 201 con `estado: NUEVO`; `400` con email mal formado.
+- **Nota para producción**: al ser público y sin autenticación, en un despliegue real conviene añadir protección anti-spam (rate limiting por IP, reCAPTCHA, o un WAF delante) — no implementado en esta fase.
+
+## 21. `GET /api/contacto`
+
+- **Para qué sirve**: listar los mensajes recibidos, paginado, ordenados por fecha de creación descendente (los más recientes primero).
+- **Acceso**: requiere token, cualquier rol (bandeja compartida).
+- **Base de datos**: `SELECT` sobre `mensajes_contacto`.
+- **Probado**: ✅ 200 con el mensaje creado; sin token → 403; probado también que un `TERAPEUTA` normal (no solo `ADMIN`) puede verlo.
+
+## 22. `GET /api/contacto/{id}`
+
+- **Para qué sirve**: ver el detalle de un mensaje.
+- **Acceso**: requiere token, cualquier rol.
+- **Base de datos**: `SELECT ... WHERE id = ?`.
+- **Probado**: ✅ 200 con los datos completos.
+
+## 23. `PATCH /api/contacto/{id}/estado`
+
+- **Para qué sirve**: mover el mensaje por su flujo de gestión (`NUEVO` → `LEIDO` → `RESPONDIDO`, o `DESCARTADO` si no procede). No hay `PUT` para este dominio: el contenido del mensaje lo escribió el visitante de la web y no tiene sentido que el staff lo edite, solo cambiar su estado de gestión. Tampoco hay `DELETE`: los leads no se borran, quedan como histórico (se descartan con `estado = DESCARTADO` si no interesan).
+- **Acceso**: requiere token, cualquier rol.
+- **Base de datos**: `UPDATE mensajes_contacto SET estado = ?`.
+- **Request** (`api-examples/23-contacto-cambiar-estado.json`):
+```json
+{ "estado": "LEIDO" }
+```
+- **Probado**: ✅ 200, `estado` pasa de `NUEVO` a `LEIDO`.
+
+## Resumen: 23/23 endpoints probados y documentados ✅
+
+Próximo dominio sugerido: **Cursos** con inscripción — ver conversación para el orden acordado.

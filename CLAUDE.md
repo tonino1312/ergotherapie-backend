@@ -27,8 +27,9 @@ Backend con **Java 21 + Spring Boot 4.1.1** para la gestión de una consulta de 
 - **Pacientes** (`Paciente`, ligado a un `Usuario` terapeuta): CRUD en `/api/pacientes`, protegido con JWT. Un `TERAPEUTA` solo ve/edita sus propios pacientes; un `ADMIN` ve todos. Borrado lógico (`activo=false`), no físico.
 - **Servicios** (`Servicio`, catálogo por idioma): CRUD en `/api/servicios`. Lectura pública (`GET`), escritura solo `ADMIN`. Borrado lógico.
 - **Citas** (`Cita`, vincula Paciente + Terapeuta + Servicio): CRUD + cambio de estado en `/api/citas`, protegido con JWT, mismo aislamiento por terapeuta que Pacientes. Incluye **detección de solapamiento de horario** (`CitaService.verificarSinSolapamiento`): no se puede crear/mover una cita si choca con otra cita activa del mismo terapeuta ese día → `409 Conflict`. Cancelar (`DELETE`) pone `estado=CANCELADA` (no borra físicamente) y libera el hueco horario.
+- **Contacto** (`MensajeContacto`): `POST /api/contacto` público (formulario de la web), resto (`GET`, `PATCH .../estado`) requiere token pero SIN aislamiento por terapeuta — bandeja compartida de todo el equipo. Flujo de estado `NUEVO` → `LEIDO` → `RESPONDIDO`/`DESCARTADO`. Sin `PUT` (el mensaje lo escribe el visitante) ni `DELETE` físico (los leads quedan como histórico).
 - Usuario admin sembrado en `V3__seed_admin_inicial.sql`: `admin@ergotherapie.local` / `CambiaEstaClave123!` — **cambiar esta contraseña de inmediato**, es solo para arrancar el sistema.
-- **19 endpoints en total**, todos probados y documentados en `docs/API.md` (con JSON de ejemplo en `api-examples/`).
+- **23 endpoints en total**, todos probados y documentados en `docs/API.md` (con JSON de ejemplo en `api-examples/`).
 
 ## Configuración
 - `application.yml` con perfiles `dev`/`prod` (activo por defecto: `dev`)
@@ -50,7 +51,8 @@ Backend con **Java 21 + Spring Boot 4.1.1** para la gestión de una consulta de 
 - Configuración sensible (credenciales, claves) en variables de entorno, nunca hardcodeada ni commiteada.
 
 ## Pendiente / próximos pasos
-- Formulario de contacto público (leads) y/o Cursos con inscripción — inspirado en ergotherapie-kids.de, ver `docs/API.md` para el contexto.
+- Cursos con inscripción — inspirado en ergotherapie-kids.de, ver `docs/API.md` para el contexto.
+- Rate limiting / anti-spam en `POST /api/contacto` (es público y sin protección todavía) antes de ir a producción.
 - Forzar cambio de contraseña del admin sembrado en el primer login.
 - Tests automatizados (unitarios de servicios + al menos un test de integración con Testcontainers).
 - Ver sección "Consejos para producción" más abajo (AWS, config, cifrado de datos clínicos).
